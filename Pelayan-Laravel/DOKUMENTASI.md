@@ -74,7 +74,7 @@ Alur perubahan status di manajemen pesanan (`PesanansTable.php`) berjalan beruru
 ### Rute Web & Cetak (`routes/web.php`)
 | Method | URI | Route Name | Keterangan |
 | :--- | :--- | :--- | :--- |
-| `GET` | `/` | — | Halaman awal (`welcome`) |
+| `GET` | `/` | — | Landing page 1 layar (split layout: foto cafe di kiri & tombol Login Pelayan / Pemilik di kanan) |
 | `GET` | `/admin/pesanans/{pesanan}/struk` | `pesanan.print.struk` | Cetak struk pembayaran kasir (khusus pelayan) |
 | `GET` | `/admin/pesanans/{pesanan}/tiket-dapur` | `pesanan.print.tiket-dapur` | Cetak tiket pesanan dapur/bar (khusus pelayan) |
 
@@ -117,6 +117,44 @@ Seluruh rute berikut dikelola oleh `PemilikPanelProvider` dan hanya dapat diakse
 | `GET` | `/pemilik/riwayat-pembayarans` | `filament.pemilik.resources.riwayat-pembayarans.index` | Log pembayaran & pelayan pengonfirmasi (*read-only*) |
 | `GET` | `/pemilik/monitoring-stok` | `filament.pemilik.resources.monitoring-stok.index` | Pemantauan stok habis & menipis (*read-only*) |
 
+### Rute REST API Pengunjung (`routes/api.php` — Prefix `/api/v1`)
+Seluruh endpoint di bawah ini bersifat **publik (tanpa login)** untuk dikonsumsi oleh frontend **React Pengunjung**, dengan CORS aktif (`config/cors.php`):
+
+| Method | URI | Route Name | Fungsi |
+| :--- | :--- | :--- | :--- |
+| `GET` | `/api/v1/meja/{qrCode}` | `api.v1.meja.show` | Identifikasi meja dari QR Code hasil scan (`404` jika tidak ditemukan) |
+| `GET` | `/api/v1/kategoris` | `api.v1.kategoris.index` | Mengambil daftar seluruh kategori menu |
+| `GET` | `/api/v1/menus` | `api.v1.menus.index` | Mengambil daftar menu, harga, gambar, condiment tersedia, dan status `stok_habis` (mendukung query `?kategori_id=` dan `?search=`) |
+| `POST` | `/api/v1/pesanans` | `api.v1.pesanans.store` | Mengirim checkout pesanan dari keranjang pengunjung (`201 Created`). Jika `metode_pembayaran = "online"`, otomatis mengembalikan `snap_token`, `snap_url`, dan `client_key` Midtrans Sandbox |
+| `GET` | `/api/v1/pesanans/{nomorPesanan}` | `api.v1.pesanans.show` | Melacak status pesanan & status pembayaran berdasarkan nomor pesanan |
+| `POST` | `/api/v1/pesanans/{nomorPesanan}/cek-pembayaran` | `api.v1.pesanans.cek-pembayaran` | Mengecek & menyinkronkan status bayar langsung ke Midtrans API (cocok untuk demo `localhost` tanpa ngrok) |
+| `POST` | `/api/v1/midtrans/callback` | `api.v1.midtrans.callback` | Webhook callback resmi dari Midtrans dengan verifikasi `signature_key` SHA-512 |
+
+#### Contoh Payload `POST /api/v1/pesanans`
+```json
+{
+  "meja_id": 1,
+  "nama_pengunjung": "Budi",
+  "metode_pembayaran": "kasir",
+  "catatan": "Antar agak cepat ya",
+  "items": [
+    {
+      "menu_id": 1,
+      "jumlah": 2,
+      "catatan": "Sedikit es",
+      "condiment_ids": [1, 2]
+    }
+  ]
+}
+```
+> **Catatan Penting untuk FE (Termasuk Midtrans Sandbox):**
+> - `metode_pembayaran` hanya menerima `"online"` atau `"kasir"`.
+> - Jika memilih `"online"`, backend otomatis memanggil Midtrans Snap Sandbox dan menyertakan `data.pembayaran.snap_token`, `snap_url`, serta `client_key` di response `POST /api/v1/pesanans`.
+> - Di React, muat `https://app.sandbox.midtrans.com/snap/snap.js` lalu panggil `window.snap.pay(snap_token)`. Pada callback `onSuccess`, panggil `POST /api/v1/pesanans/{nomorPesanan}/cek-pembayaran` agar status langsung berubah menjadi `"lunas"` meski berjalan di `localhost` tanpa ngrok.
+> - Isi `MIDTRANS_SERVER_KEY` & `MIDTRANS_CLIENT_KEY` dari dashboard Midtrans Sandbox ke `.env` Laravel (biarkan `MIDTRANS_IS_PRODUCTION=false`).
+> - Data menu dari `/api/v1/menus` sengaja **tidak mengirim angka stok** (sesuai Batasan 4.3.1 proposal), melainkan mengirim boolean `stok_habis` & `bisa_dipesan` serta teks `status_teks` (`"Tersedia"` / `"Stok Habis"`).
+> - Jika menu yang dipesan stoknya habis saat `POST /api/v1/pesanans`, backend akan mengembalikan status `422 Unprocessable Entity` dengan pesan error validasi.
+
 ---
 
 ## 4. Lokasi File & Struktur Kode
@@ -136,7 +174,7 @@ Seluruh rute berikut dikelola oleh `PemilikPanelProvider` dan hanya dapat diakse
 - `app/Models/Meja.php`, `KategoriMenu.php`, `Menu.php`, `Condiment.php`, `Pesanan.php`, `DetailPesanan.php`, `Pembayaran.php`, `Keranjang.php`, `KeranjangItem.php`.
 
 ### C. Filament Pages & Resources (`app/Filament/`)
-- `Pages/Auth/Login.php` — Halaman login kustom menerima **Email atau Username**.
+- `Pages/Auth/Login.php` & `resources/views/filament/pages/auth/login.blade.php` — Halaman login kustom (*split screen* sinkron dengan landing page, menerima **Email atau Username**, judul dinamis **Login Pelayan** / **Login Pemilik**, tombol kembali ke `/` & switch peran).
 - `Pages/PapanMeja.php` & `resources/views/filament/pages/papan-meja.blade.php` — Papan status seluruh meja cafe secara *real-time*.
 - `Resources/Pesanans/`
   - `PesananResource.php` — Badge jumlah `Pesanan Masuk` (di-cache 10 detik), konfigurasi `infolist()`, dan registrasi `DetailPesanansRelationManager`.
@@ -163,13 +201,23 @@ Seluruh rute berikut dikelola oleh `PemilikPanelProvider` dan hanya dapat diakse
 - `app/Filament/Widgets/PesananNotifier.php` & `resources/views/filament/widgets/pesanan-notifier.blade.php` — Pemantau pesanan baru + notifikasi layar & suara.
 - `resources/views/filament/modals/meja-qr-code.blade.php` & `public/js/qrcode.min.js` — Modal preview QR Code meja berbasis offline-ready Canvas/SVG dengan fitur unduh PNG & SVG.
 - `resources/views/print/struk-pesanan.blade.php` & `resources/views/print/tiket-dapur.blade.php` — Template cetak struk pelanggan & tiket dapur.
+- `resources/views/welcome.blade.php` & `public/images/cafe-hero.jpg` — Landing page 1 layar (*split screen*) dengan gambar cafe di sisi kiri, tombol **Login sebagai Pelayan** (`/admin/login`) & **Login sebagai Pemilik** (`/pemilik/login`) di sisi kanan, serta toggle mode Gelap/Terang.
 - `resources/views/vendor/filament/` — Override view pagination & table selection agar tidak bergantung pada ekstensi PHP `intl`.
 
-### E. Database & Pengujian
+### E. REST API Pengunjung (`app/Http/`)
+- `routes/api.php` & `bootstrap/app.php` — Definisi endpoint `/api/v1/*` dan JSON exception handling.
+- `config/cors.php` — Konfigurasi CORS untuk akses dari frontend React (`api/*`).
+- `app/Http/Controllers/Api/V1/MejaController.php`, `MenuController.php`, `PesananController.php`, `MidtransCallbackController.php` — Controller REST API Pengunjung & webhook Midtrans.
+- `app/Services/Pembayaran/MidtransService.php` & `config/services.php` — Integrasi Midtrans Snap Sandbox (tanpa library eksternal) + sinkronisasi status ke `PembayaranOnline`.
+- `app/Http/Requests/Api/StorePesananRequest.php` — Validasi request checkout pesanan pengunjung.
+- `app/Http/Resources/Api/` — `MejaResource`, `KategoriMenuResource`, `MenuResource`, `CondimentResource`, `PesananResource`.
+
+### F. Database & Pengujian
 - `database/migrations/` — 17 file migrasi (3 bawaan Laravel + 14 migrasi sistem cafe termasuk `add_audit_trail_to_pesanans_and_pembayarans_table`).
 - `database/seeders/DatabaseSeeder.php` — Data awal akun, 10 meja (`M01`–`M10`), 3 kategori, 5 condiment, 9 menu, dan 4 contoh pesanan.
 - `tests/Feature/PelayanFilamentTest.php` — 22 automated feature tests untuk panel Pelayan.
 - `tests/Feature/PemilikFilamentTest.php` — 4 automated feature tests untuk panel Pemilik (akses role, read-only enforcement, dan audit trail pelaku aksi).
+- `tests/Feature/PengunjungApiTest.php` — 6 automated feature tests untuk REST API Pengunjung & Midtrans Sandbox (`/api/v1/*`).
 
 ---
 
