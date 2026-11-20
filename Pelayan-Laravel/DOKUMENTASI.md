@@ -188,10 +188,11 @@ Seluruh endpoint di bawah ini bersifat **publik (tanpa login)** untuk dikonsumsi
 - `Resources/Condiments/` — `ToggleColumn` ketersediaan condiment langsung di tabel.
 - `Resources/Mejas/` — Generator QR Code (`QR-XXXXXXXX`), tombol **Generate Ulang**, aksi **QR Code** (**Unduh PNG / SVG**), serta tombol **Kosongkan Meja**.
 - `Pemilik/` (Khusus Panel `/pemilik`, *Read-Only*)
-  - `Resources/RiwayatPesananResource.php` (+ `Pages/ListRiwayatPesanans.php`, `Pages/ViewRiwayatPesanan.php`) — Menampilkan riwayat pesanan lengkap dengan **Audit Trail Pelaku Aksi** (`Diterima Oleh`, `Konfirmasi Bayar Oleh`, `Dibatalkan Oleh`, `Waktu Dibatalkan`).
-  - `Resources/RiwayatPembayaranResource.php` (+ `Pages/ListRiwayatPembayarans.php`) — Menampilkan log pembayaran dan siapa pelayan yang mengonfirmasi (`dikonfirmasi_oleh`).
+  - `Resources/RiwayatPesananResource.php` (+ `Pages/ListRiwayatPesanans.php`, `Pages/ViewRiwayatPesanan.php`) — Menampilkan riwayat pesanan lengkap dengan **Audit Trail Pelaku Aksi** (`Diterima Oleh`, `Konfirmasi Bayar Oleh`, `Dibatalkan Oleh`, `Waktu Dibatalkan`) dan tombol **Export Excel (`.xlsx`)** dengan filter rentang tanggal kustom.
+  - `Resources/RiwayatPembayaranResource.php` (+ `Pages/ListRiwayatPembayarans.php`) — Menampilkan log pembayaran, pelayan pengonfirmasi (`dikonfirmasi_oleh`), dan tombol **Export Excel (`.xlsx`)** dengan filter rentang tanggal kustom.
   - `Resources/MonitoringStokResource.php` (+ `Pages/ListMonitoringStoks.php`) — Pemantauan stok habis/hampir habis.
   - `Widgets/PemilikStatsOverview.php` — 4 kartu metrik ringkasan transaksi & stok untuk pemilik.
+  - `app/Services/Export/SimpleXlsxExporter.php` — Generator file `.xlsx` native (tanpa library eksternal) menggunakan `ZipArchive`.
 
 ### D. Widgets, Views & Assets
 - `app/Filament/Widgets/PesananStatsOverview.php` — 4 kartu metrik utama (Pesanan Baru Masuk, Sedang Diproses, Pendapatan Hari Ini, Menu Menipis/Habis).
@@ -216,7 +217,7 @@ Seluruh endpoint di bawah ini bersifat **publik (tanpa login)** untuk dikonsumsi
 - `database/migrations/` — 17 file migrasi (3 bawaan Laravel + 14 migrasi sistem cafe termasuk `add_audit_trail_to_pesanans_and_pembayarans_table`).
 - `database/seeders/DatabaseSeeder.php` — Data awal akun, 10 meja (`M01`–`M10`), 3 kategori, 5 condiment, 9 menu, dan 4 contoh pesanan.
 - `tests/Feature/PelayanFilamentTest.php` — 22 automated feature tests untuk panel Pelayan.
-- `tests/Feature/PemilikFilamentTest.php` — 4 automated feature tests untuk panel Pemilik (akses role, read-only enforcement, dan audit trail pelaku aksi).
+- `tests/Feature/PemilikFilamentTest.php` — 5 automated feature tests untuk panel Pemilik (akses role, read-only enforcement, audit trail pelaku aksi, dan export Excel rentang tanggal).
 - `tests/Feature/PengunjungApiTest.php` — 6 automated feature tests untuk REST API Pengunjung & Midtrans Sandbox (`/api/v1/*`).
 
 ---

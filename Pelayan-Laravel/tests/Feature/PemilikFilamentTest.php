@@ -3,6 +3,8 @@
 namespace Tests\Feature;
 
 use App\Filament\Pemilik\Resources\MonitoringStokResource;
+use App\Filament\Pemilik\Resources\Pages\ListRiwayatPembayarans;
+use App\Filament\Pemilik\Resources\Pages\ListRiwayatPesanans;
 use App\Filament\Pemilik\Resources\RiwayatPembayaranResource;
 use App\Filament\Pemilik\Resources\RiwayatPesananResource;
 use App\Filament\Resources\Pesanans\Pages\ListPesanans;
@@ -12,9 +14,12 @@ use App\Models\Meja;
 use App\Models\Menu;
 use App\Models\Pesanan;
 use App\Models\User;
+use App\Services\Export\SimpleXlsxExporter;
+use Filament\Facades\Filament;
 use Illuminate\Foundation\Testing\DatabaseTransactions;
 use Livewire\Livewire;
 use Tests\TestCase;
+use ZipArchive;
 
 class PemilikFilamentTest extends TestCase
 {
@@ -36,6 +41,7 @@ class PemilikFilamentTest extends TestCase
     {
         $pesanan = $this->buatPesanan();
         $this->actingAs($this->pemilik);
+        Filament::setCurrentPanel('pemilik');
 
         foreach ([
             '/pemilik',
@@ -79,6 +85,7 @@ class PemilikFilamentTest extends TestCase
 
         // Pemilik melihat pelaku aksi di dashboard pemilik
         $this->actingAs($this->pemilik);
+        Filament::setCurrentPanel('pemilik');
 
         $this->get('/pemilik/riwayat-pembayarans')
             ->assertSuccessful()
@@ -110,6 +117,47 @@ class PemilikFilamentTest extends TestCase
         $this->assertFalse(MonitoringStokResource::canCreate());
         $this->assertFalse(MonitoringStokResource::canEdit($menu));
         $this->assertFalse(MonitoringStokResource::canDelete($menu));
+    }
+
+    public function test_pemilik_dapat_export_excel_riwayat_pesanan_dan_pembayaran_sesuai_rentang_tanggal(): void
+    {
+        $pesanan = $this->buatPesanan();
+        $pesanan->pembayaran()->create([
+            'metode_pembayaran' => 'kasir',
+            'total_bayar' => $pesanan->total_harga,
+            'status_pembayaran' => 'lunas',
+            'waktu_bayar' => now(),
+        ]);
+
+        $this->actingAs($this->pemilik);
+        Filament::setCurrentPanel('pemilik');
+
+        $dari = now()->subDays(7)->toDateString();
+        $sampai = now()->toDateString();
+
+        Livewire::test(ListRiwayatPesanans::class)
+            ->callAction('exportExcel', data: [
+                'dari_tanggal' => $dari,
+                'sampai_tanggal' => $sampai,
+            ])
+            ->assertHasNoActionErrors()
+            ->assertFileDownloaded("riwayat-pesanan-{$dari}_sd_{$sampai}.xlsx");
+
+        Livewire::test(ListRiwayatPembayarans::class)
+            ->callAction('exportExcel', data: [
+                'dari_tanggal' => $dari,
+                'sampai_tanggal' => $sampai,
+            ])
+            ->assertHasNoActionErrors()
+            ->assertFileDownloaded("riwayat-pembayaran-{$dari}_sd_{$sampai}.xlsx");
+
+        // Verifikasi file XLSX yang dihasilkan merupakan arsip ZIP valid
+        $xlsxPath = SimpleXlsxExporter::create(['Kolom A', 'Kolom B'], [['Teks', 15000]], 'Uji');
+        $zip = new ZipArchive;
+        $this->assertTrue($zip->open($xlsxPath) === true);
+        $this->assertNotFalse($zip->locateName('xl/worksheets/sheet1.xml'));
+        $zip->close();
+        @unlink($xlsxPath);
     }
 
     protected function buatPesanan(): Pesanan
