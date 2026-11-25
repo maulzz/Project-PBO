@@ -1,64 +1,43 @@
-import { createContext, useContext, useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
+import { ShoppingCart } from '../models/ShoppingCart.js'
+import { CartContext } from './cartContextObject.js'
 
-const CartContext = createContext(null)
 const STORAGE_KEY = 'cafe-cart-v1'
 
-const hargaSatuan = (line) =>
-  line.menu.harga + line.condiments.reduce((n, c) => n + c.harga_condiment, 0)
-
-// Dua baris dianggap sama jika menu, condiment, dan catatannya sama.
-const lineKey = (menuId, condiments, catatan) =>
-  [menuId, condiments.map((c) => c.id).sort().join('.'), catatan.trim()].join('|')
-
 export function CartProvider({ children }) {
-  const [state, setState] = useState(() => {
+  const [cart, setCart] = useState(() => {
     try {
-      return JSON.parse(sessionStorage.getItem(STORAGE_KEY)) ?? { meja: null, lines: [] }
+      return ShoppingCart.deserialize(sessionStorage.getItem(STORAGE_KEY))
     } catch {
-      return { meja: null, lines: [] }
+      return new ShoppingCart()
     }
   })
 
   useEffect(() => {
-    try { sessionStorage.setItem(STORAGE_KEY, JSON.stringify(state)) } catch { /* abaikan */ }
-  }, [state])
-
-  const value = useMemo(() => {
-    const { meja, lines } = state
-    return {
-      meja,
-      lines,
-      totalItem: lines.reduce((n, l) => n + l.jumlah, 0),
-      totalHarga: lines.reduce((n, l) => n + hargaSatuan(l) * l.jumlah, 0),
-      hargaSatuan,
-
-      setMeja: (m) =>
-        setState((s) => (s.meja?.id === m.id ? { ...s, meja: m } : { meja: m, lines: [] })),
-
-      tambah: ({ menu, jumlah, condiments, catatan }) =>
-        setState((s) => {
-          const key = lineKey(menu.id, condiments, catatan)
-          const ada = s.lines.find((l) => l.key === key)
-          const lines = ada
-            ? s.lines.map((l) => (l.key === key ? { ...l, jumlah: Math.min(99, l.jumlah + jumlah) } : l))
-            : [...s.lines, { key, menu, jumlah, condiments, catatan: catatan.trim() }]
-          return { ...s, lines }
-        }),
-
-      ubahJumlah: (key, jumlah) =>
-        setState((s) => ({
-          ...s,
-          lines: s.lines
-            .map((l) => (l.key === key ? { ...l, jumlah: Math.min(99, jumlah) } : l))
-            .filter((l) => l.jumlah > 0), // jumlah 0 = hapus dari keranjang
-        })),
-
-      hapus: (key) => setState((s) => ({ ...s, lines: s.lines.filter((l) => l.key !== key) })),
-      kosongkan: () => setState((s) => ({ ...s, lines: [] })),
+    try {
+      sessionStorage.setItem(STORAGE_KEY, cart.serialize())
+    } catch {
+      // Abaikan jika sessionStorage tidak tersedia
     }
-  }, [state])
+  }, [cart])
+
+  const value = useMemo(
+    () => ({
+      cart,
+      meja: cart.meja,
+      lines: cart.lines,
+      totalItem: cart.getTotalItems(),
+      totalHarga: cart.getTotalHarga(),
+      hargaSatuan: (line) => line.getHargaSatuan(),
+
+      setMeja: (mejaBaru) => setCart((prev) => prev.withMeja(mejaBaru)),
+      tambah: (item) => setCart((prev) => prev.addItem(item)),
+      ubahJumlah: (key, jumlah) => setCart((prev) => prev.updateQuantity(key, jumlah)),
+      hapus: (key) => setCart((prev) => prev.removeItem(key)),
+      kosongkan: () => setCart((prev) => prev.clear()),
+    }),
+    [cart],
+  )
 
   return <CartContext.Provider value={value}>{children}</CartContext.Provider>
 }
-
-export const useCart = () => useContext(CartContext)
