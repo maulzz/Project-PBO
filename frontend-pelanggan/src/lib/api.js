@@ -1,5 +1,5 @@
 // Semua pemanggilan ke backend Laravel (/api/v1) ada di sini.
-const BASE = import.meta.env.VITE_API_URL ?? 'http://localhost:8000/api/v1'
+const BASE = import.meta.env.VITE_API_URL ?? 'https://project-pbo.maulzzserver.my.id/'
 
 async function request(path, options = {}) {
   const res = await fetch(`${BASE}${path}`, {
