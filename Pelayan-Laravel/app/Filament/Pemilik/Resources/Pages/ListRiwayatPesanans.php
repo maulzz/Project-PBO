@@ -2,9 +2,9 @@
 
 namespace App\Filament\Pemilik\Resources\Pages;
 
+use App\Contracts\LaporanExporter;
 use App\Filament\Pemilik\Resources\RiwayatPesananResource;
 use App\Models\Pesanan;
-use App\Services\Export\SimpleXlsxExporter;
 use Filament\Actions\Action;
 use Filament\Forms\Components\DatePicker;
 use Filament\Resources\Pages\ListRecords;
@@ -35,7 +35,7 @@ class ListRiwayatPesanans extends ListRecords
                         ->default(now())
                         ->afterOrEqual('dari_tanggal'),
                 ])
-                ->action(function (array $data): BinaryFileResponse {
+                ->action(function (array $data, LaporanExporter $exporter): BinaryFileResponse {
                     $dari = (string) $data['dari_tanggal'];
                     $sampai = (string) $data['sampai_tanggal'];
 
@@ -74,7 +74,7 @@ class ListRiwayatPesanans extends ListRecords
                         $p->tanggal_pesanan?->format('Y-m-d H:i') ?? '-',
                     ])->all();
 
-                    $filePath = SimpleXlsxExporter::create($headers, $rows, 'Riwayat Pesanan');
+                    $filePath = $exporter->export($headers, $rows, 'Riwayat Pesanan');
 
                     return response()
                         ->download($filePath, "riwayat-pesanan-{$dari}_sd_{$sampai}.xlsx")

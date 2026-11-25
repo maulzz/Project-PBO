@@ -2,11 +2,21 @@
 
 namespace App\Services\Export;
 
+use App\Contracts\LaporanExporter;
 use RuntimeException;
 use ZipArchive;
 
-class SimpleXlsxExporter
+class SimpleXlsxExporter implements LaporanExporter
 {
+    /**
+     * @param  array<int, string>  $headers
+     * @param  array<int, array<int, string|int|float|null>>  $rows
+     */
+    public function export(array $headers, array $rows, string $sheetName = 'Laporan'): string
+    {
+        return self::create($headers, $rows, $sheetName);
+    }
+
     /**
      * Membuat file .xlsx asli menggunakan ZipArchive tanpa dependensi eksternal.
      *
