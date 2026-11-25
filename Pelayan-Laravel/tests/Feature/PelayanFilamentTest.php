@@ -207,6 +207,7 @@ class PelayanFilamentTest extends TestCase
 
         $html = view('filament.modals.meja-qr-code', ['meja' => $meja])->render();
         $this->assertStringContainsString('QR-CODE-TEST-01', $html);
+        $this->assertStringContainsString('/order?meja=QR-CODE-TEST-01', $html);
         $this->assertStringContainsString('Unduh PNG', $html);
         $this->assertStringContainsString('Unduh SVG', $html);
     }

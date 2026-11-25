@@ -1,5 +1,11 @@
 @php
-    $qrUrl = rtrim(config('app.frontend_url'), '/') . '/order?meja=' . $meja->qr_code;
+    $defaultVercelUrl = 'https://cafe-ahlisurga.vercel.app';
+    $configuredFrontendUrl = rtrim((string) config('app.frontend_url', $defaultVercelUrl), '/');
+    $backendUrl = rtrim((string) config('app.url'), '/');
+    $baseFrontendUrl = ($configuredFrontendUrl === '' || $configuredFrontendUrl === $backendUrl)
+        ? $defaultVercelUrl
+        : $configuredFrontendUrl;
+    $qrUrl = $baseFrontendUrl . '/order?meja=' . $meja->qr_code;
 @endphp
 
 <div
