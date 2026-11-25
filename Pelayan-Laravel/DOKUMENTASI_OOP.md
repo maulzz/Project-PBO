@@ -64,6 +64,14 @@ Sesuai rancangan Bab 8.3.B di proposal, pembayaran dimodelkan menggunakan interf
   $metode->prosesPembayaran((float) $record->total_harga);
   ```
 
+### Interface 2: `LaporanExporter` (`app/Contracts/LaporanExporter.php`)
+| Komponen | Lokasi File | Peran & Method |
+| :--- | :--- | :--- |
+| **`LaporanExporter` (Interface)** | `app/Contracts/LaporanExporter.php` | Kontrak `export(array $headers, array $rows, string $sheetName = 'Laporan'): string` |
+| **`SimpleXlsxExporter` (Implementasi)** | `app/Services/Export/SimpleXlsxExporter.php` | Menghasilkan arsip `.xlsx` native dengan `ZipArchive` |
+
+- **Binding & Pemakaian:** Di-bind di `app/Providers/AppServiceProvider.php` dan di-inject lewat tipe interface `LaporanExporter` pada `app/Filament/Pemilik/Resources/Pages/ListRiwayatPesanans.php` serta `ListRiwayatPembayarans.php`.
+
 ---
 
 ## 3. Encapsulation & Domain Methods pada Model Entitas
