@@ -1,5 +1,5 @@
 @php
-    $qrUrl = url('/order?meja=' . $meja->qr_code);
+    $qrUrl = rtrim(config('app.frontend_url'), '/') . '/order?meja=' . $meja->qr_code;
 @endphp
 
 <div
