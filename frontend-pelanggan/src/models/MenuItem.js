@@ -36,6 +36,10 @@ export class MenuItem extends BaseEntity {
     this.#condiments = condiments.map((c) => (c instanceof Condiment ? c : Condiment.fromApi(c)))
   }
 
+  get idMenu() {
+    return this.id
+  }
+
   get nama_menu() {
     return this.#namaMenu
   }
@@ -88,16 +92,41 @@ export class MenuItem extends BaseEntity {
     return this.#kategori
   }
 
+  get namaKategori() {
+    return this.#kategori?.nama_kategori ?? this.#kategori?.namaKategori ?? null
+  }
+
   get condiments() {
     return [...this.#condiments]
+  }
+
+  getAvailableCondiments() {
+    return this.#condiments.filter((c) => c.cekKetersediaan())
   }
 
   isTersedia() {
     return this.#bisaDipesan && !this.#stokHabis
   }
 
+  cekStok() {
+    return this.isTersedia()
+  }
+
+  tampilkanMenu() {
+    return {
+      idMenu: this.id,
+      namaMenu: this.#namaMenu,
+      deskripsi: this.#deskripsi,
+      kategori: this.namaKategori,
+      harga: this.#harga,
+      hargaFormatted: this.getFormattedHarga(),
+      stokHabis: !this.isTersedia(),
+      statusTeks: this.isTersedia() ? this.#statusTeks : (this.#statusTeks || 'Stok Habis'),
+    }
+  }
+
   hasCondiments() {
-    return this.#condiments.length > 0
+    return this.getAvailableCondiments().length > 0
   }
 
   getFormattedHarga() {
@@ -107,8 +136,12 @@ export class MenuItem extends BaseEntity {
   matchesFilter(kategoriId = null, search = '') {
     const cocokKategori = !kategoriId || this.#kategori?.id === kategoriId
     const kataKunci = search.trim().toLowerCase()
-    const cocokNama = !kataKunci || this.#namaMenu.toLowerCase().includes(kataKunci)
-    return cocokKategori && cocokNama
+    if (!kataKunci) return cocokKategori
+
+    const cocokNama = this.#namaMenu.toLowerCase().includes(kataKunci)
+    const cocokDeskripsi = (this.#deskripsi ?? '').toLowerCase().includes(kataKunci)
+    const cocokNamaKategori = (this.namaKategori ?? '').toLowerCase().includes(kataKunci)
+    return cocokKategori && (cocokNama || cocokDeskripsi || cocokNamaKategori)
   }
 
   static fromApi(data) {
@@ -130,3 +163,5 @@ export class MenuItem extends BaseEntity {
     }
   }
 }
+
+export { MenuItem as Menu }

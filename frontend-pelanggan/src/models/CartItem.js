@@ -34,6 +34,10 @@ export class CartItem {
     return this.#key
   }
 
+  get idDetail() {
+    return this.#key
+  }
+
   get menu() {
     return this.#menu
   }
@@ -50,13 +54,21 @@ export class CartItem {
     return this.#catatan
   }
 
+  get subtotal() {
+    return this.hitungSubtotal()
+  }
+
   getHargaSatuan() {
     const tambahan = this.#condiments.reduce((sum, c) => sum + c.hargaCondiment, 0)
     return this.#menu.harga + tambahan
   }
 
-  getSubtotal() {
+  hitungSubtotal() {
     return this.getHargaSatuan() * this.#jumlah
+  }
+
+  getSubtotal() {
+    return this.hitungSubtotal()
   }
 
   withJumlah(jumlahBaru) {
@@ -66,6 +78,23 @@ export class CartItem {
       condiments: this.#condiments,
       catatan: this.#catatan,
     })
+  }
+
+  ubahJumlah(jumlahBaru) {
+    return this.withJumlah(jumlahBaru)
+  }
+
+  withCatatan(catatanBaru) {
+    return new CartItem({
+      menu: this.#menu,
+      jumlah: this.#jumlah,
+      condiments: this.#condiments,
+      catatan: String(catatanBaru ?? '').slice(0, 500),
+    })
+  }
+
+  tambahCatatan(catatanBaru) {
+    return this.withCatatan(catatanBaru)
   }
 
   toOrderItemPayload() {
@@ -91,3 +120,5 @@ export class CartItem {
     return new CartItem(raw)
   }
 }
+
+export { CartItem as DetailPesanan }

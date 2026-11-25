@@ -10,6 +10,10 @@ export class KategoriMenu extends BaseEntity {
     this.#deskripsi = deskripsi
   }
 
+  get idKategori() {
+    return this.id
+  }
+
   get nama_kategori() {
     return this.#namaKategori
   }
@@ -20,6 +24,14 @@ export class KategoriMenu extends BaseEntity {
 
   get deskripsi() {
     return this.#deskripsi
+  }
+
+  tampilkanKategori() {
+    return {
+      idKategori: this.id,
+      namaKategori: this.#namaKategori,
+      deskripsi: this.#deskripsi,
+    }
   }
 
   static fromApi(data) {

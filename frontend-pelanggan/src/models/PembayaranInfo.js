@@ -11,6 +11,7 @@ export class PembayaranInfo extends BaseEntity {
   #clientKey
 
   constructor({
+    id = null,
     metode_pembayaran = 'kasir',
     total_bayar = 0,
     status_pembayaran = 'menunggu',
@@ -20,7 +21,7 @@ export class PembayaranInfo extends BaseEntity {
     snap_url = null,
     client_key = null,
   }) {
-    super(null)
+    super(id)
     this.#metodePembayaran = metode_pembayaran
     this.#totalBayar = Number(total_bayar ?? 0)
     this.#statusPembayaran = status_pembayaran
@@ -29,6 +30,10 @@ export class PembayaranInfo extends BaseEntity {
     this.#snapToken = snap_token
     this.#snapUrl = snap_url
     this.#clientKey = client_key
+  }
+
+  get idPembayaran() {
+    return this.id
   }
 
   get metode_pembayaran() {
@@ -145,8 +150,23 @@ export class PembayaranInfo extends BaseEntity {
     return data ? new PembayaranInfo(data) : null
   }
 
+  updateStatusPembayaran(statusBaru) {
+    return new PembayaranInfo({
+      ...this.toJSON(),
+      status_pembayaran: statusBaru,
+    })
+  }
+
+  async prosesPembayaran(strategy, pesanan) {
+    if (!strategy || typeof strategy.prosesPembayaran !== 'function') {
+      throw new Error('Strategy MetodePembayaran tidak valid.')
+    }
+    return strategy.prosesPembayaran(pesanan)
+  }
+
   toJSON() {
     return {
+      id: this.id,
       metode_pembayaran: this.#metodePembayaran,
       total_bayar: this.#totalBayar,
       status_pembayaran: this.#statusPembayaran,
@@ -158,3 +178,5 @@ export class PembayaranInfo extends BaseEntity {
     }
   }
 }
+
+export { PembayaranInfo as Pembayaran }

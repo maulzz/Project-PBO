@@ -3,6 +3,8 @@ import { PembayaranInfo } from './PembayaranInfo.js'
 import { PesananItem } from './PesananItem.js'
 
 export class Pesanan extends BaseEntity {
+  static TAHAPAN_STATUS = ['Pesanan Masuk', 'Diterima', 'Diproses', 'Selesai']
+
   #nomorPesanan
   #nomorMeja
   #namaPengunjung
@@ -35,6 +37,10 @@ export class Pesanan extends BaseEntity {
     this.#catatan = catatan
     this.#pembayaran = PembayaranInfo.fromApi(pembayaran)
     this.#items = items.map((i) => (i instanceof PesananItem ? i : PesananItem.fromApi(i)))
+  }
+
+  get idPesanan() {
+    return this.id
   }
 
   get nomor_pesanan() {
@@ -103,6 +109,36 @@ export class Pesanan extends BaseEntity {
 
   isDibatalkan() {
     return this.#statusPesanan === 'Dibatalkan'
+  }
+
+  /**
+   * Sesuai aturan bisnis BE (Pesanan::isDapatDibatalkan):
+   * Pesanan hanya dapat dibatalkan oleh pelayan saat status 'Pesanan Masuk' atau 'Diterima'.
+   */
+  isDapatDibatalkan() {
+    return ['Pesanan Masuk', 'Diterima'].includes(this.#statusPesanan)
+  }
+
+  /**
+   * Sesuai Batasan 4.3.1 di PDF Proposal:
+   * Pengunjung tidak dapat mengubah atau membatalkan pesanan secara mandiri.
+   */
+  canCancelMandiri() {
+    return false
+  }
+
+  hitungTotalHarga() {
+    if (this.#items.length === 0) return this.#totalHarga
+    return this.#items.reduce((sum, item) => sum + item.hitungSubtotal(), 0)
+  }
+
+  getTahapanStatus() {
+    return [...Pesanan.TAHAPAN_STATUS]
+  }
+
+  getTahapanIndex() {
+    if (this.isDibatalkan()) return -1
+    return Pesanan.TAHAPAN_STATUS.indexOf(this.#statusPesanan)
   }
 
   /**

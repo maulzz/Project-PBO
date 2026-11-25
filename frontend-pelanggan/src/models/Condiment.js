@@ -5,11 +5,16 @@ export class Condiment extends BaseEntity {
   #hargaCondiment
   #tersedia
 
-  constructor({ id, nama_condiment, harga_condiment = 0, tersedia = true }) {
+  constructor({ id, nama_condiment, harga_condiment = 0, tersedia, status_ketersediaan }) {
     super(id)
     this.#namaCondiment = nama_condiment ?? ''
     this.#hargaCondiment = Number(harga_condiment ?? 0)
-    this.#tersedia = Boolean(tersedia)
+    const status = tersedia ?? status_ketersediaan ?? true
+    this.#tersedia = Boolean(status)
+  }
+
+  get idCondiment() {
+    return this.id
   }
 
   get nama_condiment() {
@@ -29,6 +34,18 @@ export class Condiment extends BaseEntity {
   }
 
   get tersedia() {
+    return this.#tersedia
+  }
+
+  get statusKetersediaan() {
+    return this.#tersedia
+  }
+
+  get status_ketersediaan() {
+    return this.#tersedia
+  }
+
+  cekKetersediaan() {
     return this.#tersedia
   }
 

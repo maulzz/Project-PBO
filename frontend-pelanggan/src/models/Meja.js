@@ -14,6 +14,10 @@ export class Meja extends BaseEntity {
     this.#kapasitas = kapasitas
   }
 
+  get idMeja() {
+    return this.id
+  }
+
   get nomor_meja() {
     return this.#nomorMeja
   }
@@ -23,6 +27,10 @@ export class Meja extends BaseEntity {
   }
 
   get qrCode() {
+    return this.#qrCode
+  }
+
+  get qr_code() {
     return this.#qrCode
   }
 
@@ -36,6 +44,15 @@ export class Meja extends BaseEntity {
 
   isTersedia() {
     return this.#status === 'tersedia'
+  }
+
+  identifikasiMeja(qrCode) {
+    if (!qrCode) return false
+    return this.#qrCode === String(qrCode).trim()
+  }
+
+  static async identifikasiMeja(apiService, qrCode) {
+    return apiService.getMeja(qrCode)
   }
 
   getLabelMeja() {

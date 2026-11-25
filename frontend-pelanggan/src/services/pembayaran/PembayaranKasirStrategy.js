@@ -16,3 +16,5 @@ export class PembayaranKasirStrategy extends MetodePembayaranStrategy {
     }
   }
 }
+
+export { PembayaranKasirStrategy as PembayaranKasir }

@@ -114,3 +114,5 @@ export class PembayaranOnlineStrategy extends MetodePembayaranStrategy {
     })
   }
 }
+
+export { PembayaranOnlineStrategy as PembayaranOnline }

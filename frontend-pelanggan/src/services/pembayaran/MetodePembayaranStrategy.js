@@ -25,3 +25,5 @@ export class MetodePembayaranStrategy {
     throw new Error(`Method prosesPembayaran() harus diimplementasikan untuk ${pesanan?.nomorPesanan ?? ''}.`)
   }
 }
+
+export { MetodePembayaranStrategy as MetodePembayaran }

@@ -33,6 +33,10 @@ export class PesananItem extends BaseEntity {
     }))
   }
 
+  get idDetail() {
+    return this.id
+  }
+
   get menuId() {
     return this.#menuId
   }
@@ -46,6 +50,10 @@ export class PesananItem extends BaseEntity {
   }
 
   get harga_satuan() {
+    return this.#hargaSatuan
+  }
+
+  get hargaSatuan() {
     return this.#hargaSatuan
   }
 
@@ -63,6 +71,12 @@ export class PesananItem extends BaseEntity {
 
   get condiments() {
     return [...this.#condiments]
+  }
+
+  hitungSubtotal() {
+    if (this.#subtotal > 0) return this.#subtotal
+    const hargaCondiment = this.#condiments.reduce((sum, c) => sum + c.harga_condiment, 0)
+    return (this.#hargaSatuan + hargaCondiment) * this.#jumlah
   }
 
   getCondimentSummary() {
